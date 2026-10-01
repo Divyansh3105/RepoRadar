@@ -1,0 +1,10 @@
+{
+  "name": "reporadar",
+  "version": "1.0.0",
+  "description": "Scan every drive for git repos and surface forgotten work.",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js"
+  }
+}

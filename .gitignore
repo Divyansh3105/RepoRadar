@@ -1,0 +1,4 @@
+scan.json
+ignore.json
+node_modules
+.claude/

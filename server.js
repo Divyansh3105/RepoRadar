@@ -7,6 +7,12 @@ const scanner = require('./scan');
 const PORT = +process.env.PORT || 4321;
 const PAGE = path.join(__dirname, 'public', 'index.html');
 const OPENER = { win32: 'explorer.exe', darwin: 'open' }[process.platform] || 'xdg-open';
+const IGNORE = path.join(__dirname, 'ignore.json');
+
+let ignored = [];
+try { ignored = JSON.parse(fs.readFileSync(IGNORE, 'utf8')); } catch {}
+if (!Array.isArray(ignored)) ignored = [];
+
 const known = p => scanner.state.repos.find(r => r.path === p);
 
 // On Windows `code` is code.cmd, which Node can only run through cmd.exe, and cmd.exe would interpret `&`, `^`, `%`
@@ -32,7 +38,7 @@ http.createServer(async (req, res) => {
   if (req.method === 'GET' && req.url === '/') {
     return fs.createReadStream(PAGE).pipe(res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }));
   }
-  if (req.method === 'GET' && req.url === '/api/state') return json(res, scanner.state);
+  if (req.method === 'GET' && req.url === '/api/state') return json(res, { ...scanner.state, ignored });
 
   if (req.method === 'POST') {
     if (req.headers['content-type'] !== 'application/json') return json(res, { error: 'json only' }, 415);
@@ -77,6 +83,15 @@ http.createServer(async (req, res) => {
       }
       await scanner.refresh(p);
       return json(res, { ok: true });
+    }
+    if (req.url === '/api/ignore') {
+      const { path: p, hide } = await readBody(req);
+      if (typeof p !== 'string') return json(res, { error: 'bad path' }, 400);
+      if (hide && !known(p)) return json(res, { error: 'unknown repo' }, 404);
+      const next = ignored.filter(x => x !== p).concat(hide ? [p] : []);
+      try { fs.writeFileSync(IGNORE, JSON.stringify(next, null, 2)); } catch { return json(res, { error: 'could not save ignore.json' }, 500); }
+      ignored = next;
+      return json(res, { ignored });
     }
   }
   json(res, { error: 'not found' }, 404);

@@ -4,104 +4,158 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RepoRadar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&display=swap">
 <style>
   :root {
-    --bg: #f6f7f9; --panel: #fff; --line: #e3e6eb; --text: #16181d; --muted: #6b7280;
-    --accent: #2563eb; --warn: #b45309; --warn-bg: #fef3c7; --bad: #b91c1c; --bad-bg: #fee2e2;
-    --info: #1d4ed8; --info-bg: #dbeafe; --ok: #15803d;
+    color-scheme: light dark;
+    --paper: #f3efe6; --shade: #e9e3d6; --rule: #cfc7b6; --ink: #1d1a16; --muted: #6f675a; --faint: #8c8374;
+    --rust: #a8411b; --green: #4a6b3a;
+    --serif: "Source Serif 4", Charter, "Iowan Old Style", Georgia, serif;
+    --mono: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0f1115; --panel: #171a21; --line: #272b35; --text: #e6e8ec; --muted: #8b93a1;
-      --accent: #60a5fa; --warn: #fbbf24; --warn-bg: #3a2c0b; --bad: #f87171; --bad-bg: #3b1414;
-      --info: #93c5fd; --info-bg: #13243f; --ok: #4ade80;
+      --paper: #1c1a17; --shade: #25221e; --rule: #3d3832; --ink: #ebe5d8; --muted: #a59d8f; --faint: #7f786c;
+      --rust: #e0805a; --green: #9cb987;
     }
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12.5px; }
-  .wrap { max-width: 1400px; margin: 0 auto; padding: 20px 16px 48px; }
-  header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  h1 { font-size: 20px; margin: 0; letter-spacing: -.01em; }
-  h1 span { color: var(--accent); }
-  .meta { color: var(--muted); font-size: 13px; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.45 var(--serif); font-optical-sizing: auto; accent-color: var(--rust); }
+  ::selection { background: var(--rust); color: var(--paper); }
+  :focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
+  .mono { font-family: var(--mono); font-size: 12.5px; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 28px 24px 64px; }
+
+  header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 3px double var(--ink); }
+  h1 { font-size: 30px; font-weight: 650; margin: 0; letter-spacing: -.02em; }
+  .meta { color: var(--muted); font-size: 14px; font-style: italic; }
   .spacer { flex: 1; }
-  button { font: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 7px; padding: 6px 12px; }
-  button:hover { border-color: var(--accent); }
-  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  button:disabled { opacity: .55; cursor: default; }
-  .progress { margin-top: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
-  .progress .path { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .bar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; margin-top: 8px; }
-  .bar::after { content: ""; display: block; width: 30%; height: 100%; background: var(--accent); animation: slide 1.2s ease-in-out infinite; }
-  @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
-  @media (prefers-reduced-motion: reduce) { .bar::after { animation: none; width: 100%; opacity: .5; } }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 16px 0; }
-  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
-  .tile b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
-  .tile small { color: var(--muted); }
-  .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
-  .chip { border-radius: 999px; padding: 4px 12px; font-size: 13px; }
-  .chip[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
-  .chip .n { opacity: .65; margin-left: 4px; font-variant-numeric: tabular-nums; }
-  input[type=search] { font: inherit; padding: 6px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--text); min-width: 220px; flex: 0 1 280px; margin-left: auto; }
-  .table { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+
+  button { font: inherit; cursor: pointer; color: var(--ink); background: none; border: 0; padding: 0; }
+  button:disabled { color: var(--faint); cursor: default; }
+  #rescan { font-size: 14px; border: 1px solid var(--ink); padding: 5px 16px; }
+  #rescan:hover:not(:disabled) { background: var(--ink); color: var(--paper); }
+  #rescan:disabled { border-color: var(--rule); }
+
+  .progress { padding: 12px 0; border-bottom: 1px solid var(--rule); font-size: 14px; font-style: italic; }
+  .progress b { font-style: normal; font-variant-numeric: tabular-nums; }
+  .progress .path { color: var(--muted); font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+
+  .summary { display: flex; align-items: baseline; justify-content: space-between; gap: 8px 24px; flex-wrap: wrap; margin: 22px 0 18px; }
+  .summary .head { font-size: 24px; letter-spacing: -.01em; }
+  .summary .head b { font-weight: 650; font-variant-numeric: lining-nums tabular-nums; }
+  .summary .sub { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .summary .aside { text-align: right; }
+  .summary .link { font-size: inherit; margin: 0; color: var(--ink); text-decoration-color: var(--rule); }
+  .summary .link:hover { text-decoration-color: var(--rust); }
+  .notice { margin: 0 0 10px; padding: 8px 0; color: var(--rust); font-style: italic; font-size: 14px; border-bottom: 1px dotted var(--rule); }
+
+  .controls { display: flex; gap: 12px 24px; flex-wrap: wrap; align-items: baseline; padding-bottom: 8px; }
+  #filters { display: flex; gap: 6px 20px; flex-wrap: wrap; }
+  .chip { font-size: 14px; color: var(--muted); padding: 2px 0; border-bottom: 2px solid transparent; }
+  .chip:hover { color: var(--ink); }
+  .chip.zero { color: var(--faint); }
+  .chip[aria-pressed="true"] { color: var(--ink); border-bottom-color: var(--rust); }
+  .chip .n { margin-left: 5px; font-variant-numeric: lining-nums tabular-nums; }
+  input[type=search] { font: italic 14px var(--serif); padding: 3px 0; border: 0; border-bottom: 1px solid var(--rule); background: none; color: var(--ink); min-width: 200px; flex: 0 1 260px; margin-left: auto; border-radius: 0; }
+  input[type=search]::placeholder { color: var(--muted); }
+  input[type=search]:focus-visible { outline: 0; border-bottom-color: var(--ink); }
+
+  .table { border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
   table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  tr:last-child td { border-bottom: 0; }
-  th { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; user-select: none; }
+  th, td { text-align: left; padding: 11px 14px 11px 0; vertical-align: top; }
+  td { border-top: 1px dotted var(--rule); }
+  th { font-size: 13.5px; font-weight: 400; font-style: italic; color: var(--muted); white-space: nowrap; user-select: none; padding-top: 8px; padding-bottom: 8px; position: sticky; top: 0; z-index: 1; background: var(--paper); box-shadow: inset 0 -1px 0 var(--ink); }
+  th:first-child { min-width: 220px; padding-left: 4px; }
+  th.wrap-th { white-space: normal; min-width: 90px; }
   th[data-sort] { cursor: pointer; }
-  th[data-sort]:hover { color: var(--text); }
-  th .arrow { margin-left: 4px; }
-  td .sub { color: var(--muted); font-size: 12.5px; }
-  .name { font-weight: 600; }
-  .path { word-break: break-all; }
-  .msg { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .badge { display: inline-block; border-radius: 5px; padding: 1px 7px; font-size: 12px; font-weight: 500; margin: 1px 4px 1px 0; white-space: nowrap; }
-  .b-warn { background: var(--warn-bg); color: var(--warn); }
-  .b-bad { background: var(--bad-bg); color: var(--bad); }
-  .b-info { background: var(--info-bg); color: var(--info); }
-  .muted { color: var(--muted); }
-  .actions { white-space: nowrap; }
-  .actions button { padding: 3px 9px; font-size: 12.5px; }
-  button.mini { padding: 0 6px; font-size: 12px; margin-left: 6px; }
-  button.mini:hover { border-color: var(--bad); color: var(--bad); }
-  .empty { padding: 40px; text-align: center; color: var(--muted); }
+  th[data-sort]:hover, th[aria-sort] { color: var(--ink); }
+  th .arrow { margin-left: 4px; font-style: normal; color: var(--rust); }
+  tbody tr:first-child td { border-top: 0; }
+  tbody tr:hover td:not(.empty) { background: var(--shade); }
+  td:first-child { padding-left: 4px; }
+  td .sub { color: var(--muted); font-size: 13.5px; }
+  td .sub.mono { font-size: 12px; }
+  .name { font-weight: 600; font-size: 16px; }
+  .branch { font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 8px; white-space: nowrap; }
+  .name .b-bad { font-weight: 400; font-size: 13.5px; margin-left: 8px; }
+  .actions { text-align: right; white-space: nowrap; padding-right: 4px; }
+  .actions .link { margin: 0 0 0 14px; }
+  tbody tr:not(:hover):not(:focus-within) .actions .link { color: var(--faint); }
+  .path { overflow-wrap: anywhere; margin-top: 1px; }
+  .msg { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: italic; }
+  .num { font-variant-numeric: lining-nums tabular-nums; white-space: nowrap; }
+  .badge { white-space: nowrap; margin-right: 10px; }
+  .b-warn { color: var(--rust); font-weight: 600; }
+  .b-bad { color: var(--rust); }
+  .b-bad:not(.mono) { font-style: italic; }
+  .b-info { color: var(--ink); }
+  .muted { color: var(--faint); font-style: italic; }
+  .link { font-size: 13.5px; color: var(--muted); margin-left: 12px; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: color .15s, text-decoration-color .15s; }
+  .link:hover:not(:disabled) { color: var(--ink); text-decoration-color: currentColor; }
+  .link.danger:hover:not(:disabled) { color: var(--rust); }
+  .empty { padding: 36px 4px; font-style: italic; color: var(--muted); }
+  .empty b { display: block; font-style: normal; font-weight: 600; color: var(--ink); font-size: 17px; margin-bottom: 2px; }
+  .empty .link { margin: 12px 0 0; font-style: normal; font-size: 14px; color: var(--ink); text-decoration-color: var(--rust); }
+  @media (max-width: 1180px) {
+    .wrap { padding: 20px 16px 48px; }
+    .summary .aside { text-align: left; }
+    input[type=search] { margin-left: 0; flex: 1 1 100%; }
+    table, thead, tbody, td { display: block; }
+    thead tr { display: flex; flex-wrap: wrap; gap: 2px 16px; padding: 6px 4px; box-shadow: inset 0 -1px 0 var(--ink); }
+    thead tr::before { content: "Sort by"; font-style: italic; color: var(--faint); font-size: 13.5px; padding: 2px 0; }
+    th { position: static; box-shadow: none; padding: 2px 0; min-width: 0 !important; background: none; }
+    th:first-child { padding-left: 0; }
+    tbody tr { display: block; padding: 12px 4px; border-top: 1px dotted var(--rule); }
+    tbody tr:first-child { border-top: 0; }
+    tbody tr:hover td:not(.empty) { background: none; }
+    td { border: 0; padding: 2px 0; }
+    td:first-child { padding: 0 0 4px; }
+    td[data-label] { display: grid; grid-template-columns: 112px minmax(0, 1fr); justify-items: start; }
+    td[data-label]::before { content: attr(data-label); grid-row: span 9; font-style: italic; color: var(--muted); font-size: 13.5px; }
+    td[data-label] > * { grid-column: 2; }
+    td.nil { display: none; }
+    td.actions { text-align: left; padding-top: 8px; }
+    .actions .link { margin: 0 16px 0 0; }
+    tbody tr:not(:hover):not(:focus-within) .actions .link { color: var(--muted); }
+    .msg { max-width: 100%; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>Repo<span>Radar</span></h1>
+    <h1>RepoRadar</h1>
     <div class="meta" id="meta"></div>
     <div class="spacer"></div>
-    <button class="primary" id="rescan">Rescan</button>
+    <button id="rescan">Rescan</button>
   </header>
 
   <div class="progress" id="progress" hidden>
-    <div><b id="pcount">0</b> folders scanned · <b id="prepos">0</b> repos so far</div>
+    <div>Scanning… <b id="pcount">0</b> folders, <b id="prepos">0</b> repos so far</div>
     <div class="path mono" id="ppath"></div>
-    <div class="bar"></div>
   </div>
 
-  <div class="tiles" id="tiles"></div>
+  <div class="summary" id="summary"><div class="head" style="color:var(--muted)">Reading the last scan…</div></div>
 
   <div class="controls">
-    <div id="filters" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-    <input type="search" id="q" placeholder="Filter by name or path…" aria-label="Filter repos">
+    <div id="filters"></div>
+    <input type="search" id="q" placeholder="Filter by name or path  ( / )" aria-label="Filter repos">
   </div>
+
+  <div class="notice" id="notice" role="status" hidden></div>
 
   <div class="table">
     <table>
       <thead><tr>
-        <th data-sort="name">Repository</th>
-        <th>Branch</th>
-        <th data-sort="age">Last commit</th>
-        <th data-sort="changes">Uncommitted</th>
-        <th data-sort="branches">Unpushed / local-only</th>
-        <th data-sort="nm">Build folders</th>
-        <th></th>
+        <th data-sort="name" tabindex="0">Repository</th>
+        <th data-sort="age" tabindex="0">Last commit</th>
+        <th data-sort="changes" tabindex="0">Uncommitted</th>
+        <th data-sort="branches" tabindex="0" class="wrap-th">Unpushed / local-only</th>
+        <th data-sort="nm" tabindex="0">Build folders</th>
+        <th aria-label="Actions"></th>
       </tr></thead>
       <tbody id="rows"></tbody>
     </table>
@@ -181,30 +235,39 @@ function render() {
   $('prepos').textContent = (data.found ?? 0).toLocaleString();
   $('ppath').textContent = data.current;
 
-  // tiles
+  // summary
   const count = fn => withFlags.filter(([, f]) => fn(f)).length;
   const staleNm = withFlags.filter(([, f]) => f.stale);
   const staleBytes = staleNm.reduce((s, [r]) => s + buildBytes(r), 0);
   const allNm = repos.reduce((s, r) => s + buildBytes(r), 0);
-  $('tiles').innerHTML = [
-    [repos.length, 'repositories'],
-    [count(f => f.dirty), 'with uncommitted changes'],
-    [count(f => f.unpushed), 'with unpushed commits'],
-    [count(f => f.local), 'with local-only branches'],
-    [count(f => f.stash), 'with stashed changes'],
-    [bytes(staleBytes) || '0 B', `in build folders of ${staleNm.length} stale repos (of ${bytes(allNm) || '0 B'})`],
-  ].map(([v, l]) => `<div class="tile"><b>${esc(v)}</b><small>${esc(l)}</small></div>`).join('');
+  const attention = count(FILTERS[0][2]);
+  const reasons = [['dirty', 'with uncommitted changes'], ['unpushed', 'with unpushed commits'], ['local', 'with local-only branches'], ['stash', 'with stashes']]
+    .map(([k, label]) => [k, label, count(FILTERS.find(([fk]) => fk === k)[2])]).filter(([, , n]) => n)
+    .map(([k, label, n]) => `<button class="link" data-filter="${k}">${n} ${label}</button>`);
+  const list = reasons.length > 1 ? `${reasons.slice(0, -1).join(', ')} and ${reasons.at(-1)}` : reasons[0];
+  $('summary').innerHTML = `<div>
+      <div class="head">${attention
+        ? `<b style="color:var(--rust)">${attention}</b> of ${repos.length} repositories need attention.`
+        : `All ${repos.length} repositories are committed and pushed.`}</div>
+      ${list ? `<div class="sub">${list}.</div>` : ''}
+    </div>
+    <div class="aside sub">${bytes(allNm) || '0 B'} in build folders${staleNm.length
+      ? `<br><button class="link" data-filter="stale">${bytes(staleBytes)} in ${staleNm.length} stale repo${staleNm.length === 1 ? '' : 's'}</button> (untouched ${STALE_DAYS}+ days)` : ''}</div>`;
 
   // filter chips
-  $('filters').innerHTML = FILTERS.map(([k, label, fn]) =>
-    `<button class="chip" data-filter="${k}" aria-pressed="${k === filter}">${label}<span class="n">${count(fn)}</span></button>`).join('')
-    + `<button class="chip" data-filter="hidden" aria-pressed="${filter === 'hidden'}">Hidden<span class="n">${hiddenRepos.length}</span></button>`;
+  const chip = (k, label, n) =>
+    `<button class="chip${n ? '' : ' zero'}" data-filter="${k}" aria-pressed="${k === filter}">${label}<span class="n">${n}</span></button>`;
+  $('filters').innerHTML = FILTERS.map(([k, label, fn]) => chip(k, label, count(fn))).join('') + chip('hidden', 'Hidden', hiddenRepos.length);
 
   // sort arrows
   document.querySelectorAll('th[data-sort]').forEach(th => {
     th.querySelector('.arrow')?.remove();
-    if (th.dataset.sort === sort.key) th.insertAdjacentHTML('beforeend', `<span class="arrow">${sort.dir > 0 ? '↑' : '↓'}</span>`);
+    th.removeAttribute('aria-sort');
+    if (th.dataset.sort !== sort.key) return;
+    th.setAttribute('aria-sort', sort.dir > 0 ? 'ascending' : 'descending');
+    th.insertAdjacentHTML('beforeend', `<span class="arrow">${sort.dir > 0 ? '↑' : '↓'}</span>`);
   });
+  const link = (attrs, label, title) => `<button class="link" ${attrs}${title ? ` title="${title}"` : ''}>${label}</button>`;
 
   // rows
   const showHidden = filter === 'hidden';
@@ -220,31 +283,32 @@ function render() {
 
   $('rows').innerHTML = rows.length ? rows.map(([r, f]) => `
     <tr>
-      <td><div class="name">${esc(r.name)}</div><div class="sub mono path">${esc(r.path)}</div></td>
-      <td><span class="mono">${esc(r.branch ?? '—')}</span>${r.hasRemote ? '' : '<div><span class="badge b-bad">no remote</span></div>'}</td>
-      <td title="${r.lastCommit ? esc(new Date(r.lastCommit.at).toLocaleString()) : ''}">
+      <td>
+        <div class="name">${esc(r.name)}<span class="branch mono" title="Current branch">${esc(r.branch ?? '—')}</span>${r.hasRemote ? '' : '<span class="b-bad">no remote</span>'}</div>
+        <div class="sub mono path">${esc(r.path).replace(/[\\/]/g, '$&<wbr>')}</div>
+      </td>
+      <td data-label="Last commit" title="${r.lastCommit ? esc(new Date(r.lastCommit.at).toLocaleString()) : ''}">
         ${r.lastCommit ? `<div class="num">${ago(r.lastCommit.at)}</div><div class="sub msg" title="${esc(r.lastCommit.message)}">${esc(r.lastCommit.message)}</div>` : '<span class="muted">no commits</span>'}
       </td>
-      <td class="num">${r.changes == null ? '<span class="muted">error</span>'
+      <td data-label="Uncommitted" class="num${r.changes === 0 && !f.stash ? ' nil' : ''}">${r.changes == null ? '<span class="muted">error</span>'
         : f.dirty ? `<span class="badge b-warn">${r.changes} file${r.changes === 1 ? '' : 's'}</span>${r.untracked ? `<div class="sub">${r.untracked} untracked</div>` : ''}${
           r.changedAt ? `<div class="sub" title="Newest change: ${esc(new Date(r.changedAt).toLocaleString())}">last edit ${ago(r.changedAt)}</div>` : ''}`
         : '<span class="muted">clean</span>'}${
         f.stash ? `<div><span class="badge b-info" title="git stash list">${r.stashes} stash${r.stashes === 1 ? '' : 'es'}</span></div>` : ''}</td>
-      <td>${r.unpushed.map(b => `<span class="badge b-info mono" title="${b.ahead} commit(s) not pushed">${esc(b.name)} ↑${b.ahead}</span>`).join('')}${
+      <td data-label="Unpushed" class="${f.unpushed || r.localOnly.length ? '' : 'nil'}">${r.unpushed.map(b => `<span class="badge b-info mono" title="${b.ahead} commit(s) not pushed">${esc(b.name)} ↑${b.ahead}</span>`).join('')}${
         r.localOnly.map(n => `<span class="badge b-bad mono" title="No upstream branch">${esc(n)}</span>`).join('')}${
         !f.unpushed && !r.localOnly.length ? '<span class="muted">—</span>' : ''}</td>
-      <td class="num">${r.buildDirs.length ? r.buildDirs.map(d => `<div><span class="mono">${esc(d.name)}</span> ${bytes(d.bytes)}${
-        f.stale ? ' <span class="badge b-warn">stale</span>' : ''}<button class="mini" data-clean="${esc(d.name)}" data-path="${esc(r.path)}" data-size="${bytes(d.bytes)}">Delete</button></div>`).join('')
+      <td data-label="Build folders" class="num${r.buildDirs.length ? '' : ' nil'}">${r.buildDirs.length ? r.buildDirs.map(d => `<div><span class="mono">${esc(d.name)}</span> ${bytes(d.bytes)}${
+        f.stale ? ' <span class="badge b-warn">stale</span>' : ''}<button class="link danger" data-clean="${esc(d.name)}" data-path="${esc(r.path)}" data-size="${bytes(d.bytes)}">Delete</button></div>`).join('')
         : '<span class="muted">—</span>'}</td>
-      <td class="actions">
-        <button data-open="${esc(r.path)}">Open</button>
-        <button data-code="${esc(r.path)}">VS Code</button>
-        <button data-refresh="${esc(r.path)}" title="Re-check just this repo">Refresh</button>
-        <button data-copy="${esc(r.path)}">Copy path</button>
-        <button data-hide="${esc(r.path)}" data-hidden="${showHidden}">${showHidden ? 'Unhide' : 'Hide'}</button>
-      </td>
+      <td class="actions">${link(`data-open="${esc(r.path)}"`, 'Open', 'Open folder')}${link(`data-code="${esc(r.path)}"`, 'Code', 'Open in VS Code')}${
+          link(`data-refresh="${esc(r.path)}"`, 'Refresh', 'Re-check just this repo')}${link(`data-copy="${esc(r.path)}"`, 'Copy', 'Copy path')}${
+          link(`data-hide="${esc(r.path)}" data-hidden="${showHidden}"`, showHidden ? 'Unhide' : 'Hide')}</td>
     </tr>`).join('')
-    : `<tr><td colspan="7" class="empty">${data.scanning && !repos.length ? 'Looking for repositories…' : 'Nothing here. Nice.'}</td></tr>`;
+    : `<tr><td colspan="6" class="empty">${data.scanning && !repos.length ? 'Looking for repositories…'
+      : needle ? `<b>No repository matches “${esc(q)}”.</b>Try part of the folder name or path.`
+      : filter === 'hidden' ? '<b>No hidden repositories.</b>Hide one from its row to keep it out of every list.'
+      : `${filter === 'attention' ? '<b>Nothing needs attention.</b>Every repository is committed, pushed and free of stashes.' : '<b>Nothing here.</b>No repository matches this filter.'}${filter !== 'all' && repos.length ? `<div><button class="link" data-filter="all">Show all ${repos.length}</button></div>` : ''}`}</td></tr>`;
 }
 
 async function poll() {
@@ -256,14 +320,29 @@ const post = (url, body) => fetch(url, { method: 'POST', headers: { 'content-typ
 
 $('rescan').onclick = async () => { await post('/api/scan'); poll(); };
 $('q').oninput = e => { q = e.target.value; render(); };
-$('filters').onclick = e => { const b = e.target.closest('[data-filter]'); if (b) { filter = b.dataset.filter; render(); } };
-document.querySelector('thead').onclick = e => {
+const pickFilter = e => { const b = e.target.closest('[data-filter]'); if (b) { filter = b.dataset.filter; render(); } };
+$('filters').onclick = $('summary').onclick = pickFilter;
+let noticeTimer;
+const notify = msg => {
+  $('notice').textContent = msg;
+  $('notice').hidden = false;
+  clearTimeout(noticeTimer);
+  noticeTimer = setTimeout(() => { $('notice').hidden = true; }, 6000);
+};
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && !e.target.closest('input, textarea')) { e.preventDefault(); $('q').focus(); }
+  if (e.key === 'Escape' && e.target === $('q') && q) { $('q').value = q = ''; render(); }
+});
+const thead = document.querySelector('thead');
+thead.onclick = e => {
   const th = e.target.closest('th[data-sort]');
   if (!th) return;
   sort = th.dataset.sort === sort.key ? { key: sort.key, dir: -sort.dir } : { key: th.dataset.sort, dir: th.dataset.sort === 'name' ? 1 : -1 };
   render();
 };
+thead.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); thead.onclick(e); } };
 $('rows').onclick = async e => {
+  pickFilter(e);
   const open = e.target.closest('[data-open]');
   const copy = e.target.closest('[data-copy]');
   const hide = e.target.closest('[data-hide]');
@@ -273,7 +352,7 @@ $('rows').onclick = async e => {
   if (open) post('/api/open', { path: open.dataset.open });
   if (code) {
     const res = await post('/api/code', { path: code.dataset.code });
-    if (!res.ok) alert((await res.json()).error);
+    if (!res.ok) notify((await res.json()).error);
   }
   if (refresh) {
     refresh.disabled = true;
@@ -287,7 +366,7 @@ $('rows').onclick = async e => {
     clean.disabled = true;
     clean.textContent = 'Deleting…';
     const res = await post('/api/clean', { path, name });
-    if (!res.ok) alert((await res.json()).error);
+    if (!res.ok) notify((await res.json()).error);
     poll();
   }
   if (hide) {
@@ -295,9 +374,10 @@ $('rows').onclick = async e => {
     if (res.ok) { data.ignored = (await res.json()).ignored; render(); }
   }
   if (copy) {
-    await navigator.clipboard.writeText(copy.dataset.copy).catch(() => {});
+    const ok = await navigator.clipboard.writeText(copy.dataset.copy).then(() => true, () => false);
+    if (!ok) return notify('Could not reach the clipboard.');
     copy.textContent = 'Copied';
-    setTimeout(() => { copy.textContent = 'Copy path'; }, 1200);
+    setTimeout(() => { copy.textContent = 'Copy'; }, 1200);
   }
 };
 setInterval(() => !data?.scanning && render(), 60_000); // keep "x ago" fresh

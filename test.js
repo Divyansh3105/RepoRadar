@@ -1,5 +1,10 @@
 const assert = require('assert');
-const { parseStatus, parseBranches } = require('./scan');
+const { parseStatus, parseBranches, lastTouched } = require('./scan');
+
+// old commit but a fresh uncommitted edit is not stale; the build folder's mtime counts too; nothing at all -> null
+assert.strictEqual(lastTouched({ lastCommit: { at: 100 }, changedAt: 500, buildDirs: [{ modified: 300 }] }), 500);
+assert.strictEqual(lastTouched({ lastCommit: { at: 100 }, changedAt: null, buildDirs: [{ modified: 300 }] }), 300);
+assert.strictEqual(lastTouched({ lastCommit: null, changedAt: null, buildDirs: [] }), null);
 
 assert.deepStrictEqual(
   parseStatus('## main...origin/main [ahead 2, behind 1]\0 M src/a.js\0?? notes.txt\0'),

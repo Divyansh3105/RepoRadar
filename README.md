@@ -28,16 +28,25 @@ To use another port, set `PORT` before starting:
 PORT=5000 npm start
 ```
 
+To scan only the folders you keep code in, instead of every drive, set `ROOTS` (separated by `;` on Windows, `:` on macOS and Linux):
+
+```bash
+ROOTS="D:\Projects;C:\work" npm start
+```
+
+The last scan is reused on start, so click **Rescan** after changing `ROOTS`.
+
 ## What it flags
 
 | Filter | A repo shows up when… |
 |---|---|
-| Needs attention | any of the four below are true |
+| Needs attention | any of the five below are true |
 | Uncommitted | it has modified, staged or untracked files |
 | Stashed | `git stash list` is not empty |
 | Unpushed | a branch is ahead of its upstream |
 | Local-only | a branch has no upstream (or its upstream was deleted), or the repo has no remote at all |
-| Stale build folders | it has build folders and hasn't been touched in 30+ days |
+| Git error | `git status` failed, so there's no telling what's inside |
+| Stale build folders | it has build folders and nothing has been touched in 30+ days: no commit, no uncommitted edit, no change to the build folder |
 
 The summary at the top counts each case; click a count to filter to it. Column headings sort the table.
 
@@ -59,8 +68,8 @@ RepoRadar measures `node_modules`, `.venv`, `venv`, `target`, `.next`, `dist` an
 
 ## How scanning works
 
-- Walks every drive (`C:\`, `D:\`, … on Windows, `/` elsewhere) up to 12 levels deep.
-- Skips system and cache folders such as `Windows`, `Program Files`, `AppData`, `$Recycle.Bin`, `.cache` and `node_modules`.
+- Walks every drive (`C:\`, `D:\`, … on Windows, `/` elsewhere), or just the folders in `ROOTS`, up to 12 levels deep.
+- Skips system and cache folders such as `Windows`, `Program Files`, `AppData`, `$Recycle.Bin`, `.cache` and `node_modules`, plus `/proc`, `/sys`, `/dev`, `/System`, `/Volumes` and `/private` on macOS and Linux.
 - Inspects up to 4 repos at a time with plain `git` commands, read-only.
 
 ## Files it writes
@@ -80,4 +89,4 @@ The server listens only on `127.0.0.1` and rejects requests for any other host n
 npm test
 ```
 
-Runs the git-output parser checks in `test.js`. The code is three files: `scan.js` (walker and git inspection), `server.js` (HTTP API) and `public/index.html` (the dashboard).
+Runs the git-output parser and staleness checks in `test.js`. The code is three files: `scan.js` (walker and git inspection), `server.js` (HTTP API) and `public/index.html` (the dashboard).

@@ -42,6 +42,14 @@ const SKIP = new Set([
   "site-packages",
 ]);
 
+// Virtual or mirrored top-level folders on macOS/Linux (/System/Volumes/Data mirrors /Users, /proc and /sys are not disk).
+// Matched by full path, since names like "dev" or "sys" are fine inside a home folder.
+const SKIP_ABS = new Set(
+  process.platform === "win32"
+    ? []
+    : ["/proc", "/sys", "/dev", "/run", "/System", "/Volumes", "/private", "/snap"],
+);
+
 const state = {
   scanning: false,
   startedAt: null,
@@ -61,10 +69,21 @@ function load() {
     });
     for (const r of state.repos) // caches from before buildDirs existed
       r.buildDirs ??= r.nodeModules ? [{ name: "node_modules", ...r.nodeModules }] : [];
+    for (const r of state.repos) r.touchedAt ??= lastTouched(r); // caches from before touchedAt existed
   } catch {}
 }
 
+// Newest sign of life: last commit, newest uncommitted edit, or a build folder's mtime. Drives the "stale" flag.
+function lastTouched(r) {
+  return (
+    Math.max(r.lastCommit?.at ?? 0, r.changedAt ?? 0, ...r.buildDirs.map((d) => d.modified)) || null
+  );
+}
+
+// ROOTS="D:\Projects;C:\work" (":"-separated on macOS/Linux) limits the scan; unset scans every drive.
 function listDrives() {
+  const roots = process.env.ROOTS?.split(path.delimiter).filter(Boolean);
+  if (roots?.length) return roots.map((r) => path.resolve(r));
   if (process.platform !== "win32") return ["/"];
   return [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"]
     .map((l) => `${l}:\\`)
@@ -203,7 +222,7 @@ async function repoInfo(dir) {
   const [ts, ...msg] = (log || "").trim().split("\t");
   const st = status == null ? null : parseStatus(status);
   const branches = parseBranches(refs || "");
-  return {
+  const info = {
     path: dir,
     name: path.basename(dir),
     lastCommit: ts ? { at: +ts * 1000, message: msg.join("\t") } : null,
@@ -219,6 +238,8 @@ async function repoInfo(dir) {
       .map((b) => ({ name: b.name, ahead: b.ahead })),
     buildDirs: await buildDirs(dir),
   };
+  info.touchedAt = lastTouched(info);
+  return info;
 }
 
 const save = () => fs.writeFile(CACHE, JSON.stringify(state)).catch(() => {});
@@ -271,8 +292,10 @@ function walk(roots, onRepo) {
       if (entries.some((e) => e.name === ".git")) return onRepo(dir);
       if (depth >= MAX_DEPTH) return;
       for (const e of entries)
-        if (e.isDirectory() && !SKIP.has(e.name))
-          stack.push([path.join(dir, e.name), depth + 1]);
+        if (e.isDirectory() && !SKIP.has(e.name)) {
+          const p = path.join(dir, e.name);
+          if (!SKIP_ABS.has(p)) stack.push([p, depth + 1]);
+        }
     };
     const pump = () => {
       while (busy < WALKERS && stack.length) {
@@ -329,4 +352,4 @@ async function scan() {
   }
 }
 
-module.exports = { state, load, scan, refresh, parseStatus, parseBranches };
+module.exports = { state, load, scan, refresh, parseStatus, parseBranches, lastTouched };

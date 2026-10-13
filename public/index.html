@@ -311,9 +311,11 @@ function render() {
       : `${filter === 'attention' ? '<b>Nothing needs attention.</b>Every repository is committed, pushed and free of stashes.' : '<b>Nothing here.</b>No repository matches this filter.'}${filter !== 'all' && repos.length ? `<div><button class="link" data-filter="all">Show all ${repos.length}</button></div>` : ''}`}</td></tr>`;
 }
 
+let pollTimer;
 async function poll() {
+  clearTimeout(pollTimer); // one loop at a time, however many buttons call poll()
   try { data = await (await fetch('/api/state')).json(); render(); } catch {}
-  if (!data || data.scanning) setTimeout(poll, 1000);
+  if (!data || data.scanning) pollTimer = setTimeout(poll, 1000);
 }
 
 const post = (url, body) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) });

@@ -1,4 +1,5 @@
 scan.json
+scan.json.tmp
 ignore.json
 node_modules
 .claude/

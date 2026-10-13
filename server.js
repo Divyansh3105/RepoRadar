@@ -28,31 +28,32 @@ const findVSCode = () => new Promise(resolve => {
 const json = (res, data, code = 200) => res.writeHead(code, { 'content-type': 'application/json' }).end(JSON.stringify(data));
 const readBody = req => new Promise(resolve => {
   let s = '';
-  req.on('data', c => { s += c; }).on('end', () => { try { resolve(JSON.parse(s)); } catch { resolve({}); } });
+  req.on('data', c => { s += c; }).on('end', () => { try { resolve(JSON.parse(s) ?? {}); } catch { resolve({}); } });
 });
 
-http.createServer(async (req, res) => {
+const route = async (req, res) => {
   // Only answer our own origin: blocks DNS rebinding, and the JSON content-type forces a CORS preflight cross-site.
   if (!/^(127\.0\.0\.1|localhost):\d+$/.test(req.headers.host || '')) return json(res, { error: 'forbidden' }, 403);
 
-  if (req.method === 'GET' && req.url === '/') {
-    return fs.createReadStream(PAGE).pipe(res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }));
+  const url = req.url.split('?')[0];
+  if (req.method === 'GET' && url === '/') {
+    return res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(await fs.promises.readFile(PAGE));
   }
-  if (req.method === 'GET' && req.url === '/api/state') return json(res, { ...scanner.state, ignored });
+  if (req.method === 'GET' && url === '/api/state') return json(res, { ...scanner.state, ignored });
 
   if (req.method === 'POST') {
     if (req.headers['content-type'] !== 'application/json') return json(res, { error: 'json only' }, 415);
-    if (req.url === '/api/scan') {
+    if (url === '/api/scan') {
       scanner.scan();
       return json(res, { ok: true });
     }
-    if (req.url === '/api/open') {
+    if (url === '/api/open') {
       const { path: p } = await readBody(req);
       if (!known(p)) return json(res, { error: 'unknown repo' }, 404);
       execFile(OPENER, [p], () => {}); // explorer.exe exits 1 even on success
       return json(res, { ok: true });
     }
-    if (req.url === '/api/code') {
+    if (url === '/api/code') {
       const { path: p } = await readBody(req);
       if (!known(p)) return json(res, { error: 'unknown repo' }, 404);
       const exe = await findVSCode();
@@ -63,13 +64,13 @@ http.createServer(async (req, res) => {
       child.unref();
       return ok ? json(res, { ok: true }) : json(res, { error: 'could not start VS Code' }, 500);
     }
-    if (req.url === '/api/refresh') {
+    if (url === '/api/refresh') {
       const { path: p } = await readBody(req);
       if (!known(p)) return json(res, { error: 'unknown repo' }, 404);
       await scanner.refresh(p);
       return json(res, { ok: true });
     }
-    if (req.url === '/api/clean') {
+    if (url === '/api/clean') {
       // Deletes files: only a build folder the scan itself reported for a known repo, and never through a link.
       const { path: p, name } = await readBody(req);
       if (!known(p)?.buildDirs?.some(d => d.name === name)) return json(res, { error: 'unknown build folder' }, 404);
@@ -84,7 +85,7 @@ http.createServer(async (req, res) => {
       await scanner.refresh(p);
       return json(res, { ok: true });
     }
-    if (req.url === '/api/ignore') {
+    if (url === '/api/ignore') {
       const { path: p, hide } = await readBody(req);
       if (typeof p !== 'string') return json(res, { error: 'bad path' }, 400);
       if (hide && !known(p)) return json(res, { error: 'unknown repo' }, 404);
@@ -95,6 +96,14 @@ http.createServer(async (req, res) => {
     }
   }
   json(res, { error: 'not found' }, 404);
+};
+
+http.createServer((req, res) => route(req, res).catch(e => {
+  console.error(e);
+  if (res.headersSent) res.end(); else json(res, { error: 'server error' }, 500);
+})).on('error', e => {
+  console.error(e.code === 'EADDRINUSE' ? `Port ${PORT} is already in use. Set PORT to another number.` : e.message);
+  process.exit(1);
 }).listen(PORT, '127.0.0.1', () => {
   console.log(`RepoRadar → http://localhost:${PORT}`);
   scanner.load();

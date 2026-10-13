@@ -28,11 +28,15 @@ To use another port, set `PORT` before starting:
 PORT=5000 npm start
 ```
 
+PowerShell: `$env:PORT=5000; npm start`. cmd: `set PORT=5000 && npm start`.
+
 To scan only the folders you keep code in, instead of every drive, set `ROOTS` (separated by `;` on Windows, `:` on macOS and Linux):
 
 ```bash
-ROOTS="D:\Projects;C:\work" npm start
+ROOTS="$HOME/code:$HOME/work" npm start
 ```
+
+On Windows, use `;` between folders. PowerShell: `$env:ROOTS="D:\Projects;C:\work"; npm start`. cmd: `set ROOTS=D:\Projects;C:\work && npm start`.
 
 The last scan is reused on start, so click **Rescan** after changing `ROOTS`.
 

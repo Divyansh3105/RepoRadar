@@ -102,7 +102,8 @@ function git(dir, ...args) {
   return new Promise((resolve) =>
     execFile(
       "git",
-      ["-c", "safe.directory=*", "-C", dir, ...args],
+      // fsmonitor=false: a repo's own config could name a command for status to run. no-optional-locks: status must not rewrite the index.
+      ["-c", "safe.directory=*", "-c", "core.fsmonitor=false", "--no-optional-locks", "-C", dir, ...args],
       { maxBuffer: 64 << 20, windowsHide: true, timeout: 60_000 },
       (err, stdout) => resolve(err ? null : stdout),
     ),
@@ -242,15 +243,32 @@ async function repoInfo(dir) {
   return info;
 }
 
-const save = () => fs.writeFile(CACHE, JSON.stringify(state)).catch(() => {});
+// Saves are queued and go through a temp file, so overlapping saves can't leave a half-written scan.json.
+let saving = Promise.resolve();
+const save = () =>
+  (saving = saving
+    .then(async () => {
+      await fs.writeFile(CACHE + ".tmp", JSON.stringify(state));
+      await fs.rename(CACHE + ".tmp", CACHE);
+    })
+    .catch(() => {}));
+
+// The list a rescan is collecting into; refreshes must land there too, or the swap at the end would undo them.
+let pending = null;
+
+function replace(list, dir, info) {
+  const i = list.findIndex((r) => r.path === dir);
+  if (i < 0) return;
+  if (info) list[i] = info;
+  else list.splice(i, 1);
+}
 
 // Re-inspect one known repo in place; drops the row if the folder is gone.
 async function refresh(dir) {
   const info = await fs.stat(dir).then(() => repoInfo(dir), () => null);
-  const i = state.repos.findIndex((r) => r.path === dir);
-  if (i < 0) return;
-  if (info) state.repos[i] = info;
-  else state.repos.splice(i, 1);
+  if (!state.repos.some((r) => r.path === dir)) return;
+  replace(state.repos, dir, info);
+  if (pending) replace(pending, dir, info);
   if (!state.scanning) await save();
 }
 
@@ -323,7 +341,7 @@ async function scan() {
     drives: listDrives(),
   });
   // Rescans keep the old results visible and swap at the end; a first scan (nothing to show yet) streams in.
-  const fresh = state.repos.length ? [] : state.repos;
+  const fresh = (pending = state.repos.length ? [] : state.repos);
   try {
     const limit = limiter(GIT_JOBS);
     const jobs = [];
@@ -343,6 +361,7 @@ async function scan() {
     await Promise.all(jobs);
     state.repos = fresh;
   } finally {
+    pending = null;
     Object.assign(state, {
       scanning: false,
       finishedAt: Date.now(),
